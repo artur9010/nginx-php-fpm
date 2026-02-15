@@ -1,4 +1,4 @@
-FROM php:8.2.14-fpm-alpine3.19
+FROM php:8.2.29-fpm-alpine3.21
 
 LABEL maintainer="Ric Harvey <ric@squarecows.com>"
 
@@ -19,9 +19,7 @@ RUN apk add --no-cache nginx \
     nginx-mod-http-lua \
     nginx-mod-devel-kit
 
-RUN echo @testing https://dl-cdn.alpinelinux.org/alpine/edge/testing >> /etc/apk/repositories && \
-    echo /etc/apk/respositories && \
-    apk update && apk upgrade &&\
+RUN apk update && \
     apk add --no-cache \
     bash \
     openssh-client \
@@ -30,9 +28,6 @@ RUN echo @testing https://dl-cdn.alpinelinux.org/alpine/edge/testing >> /etc/apk
     curl \
     libcurl \
     libpq \
-    git \
-    python3 \
-    py3-pip \
     dialog \
     autoconf \
     make \
@@ -52,17 +47,16 @@ RUN apk add --no-cache --virtual .sys-deps \
     linux-headers \
     augeas-dev \
     libmcrypt-dev \
-    python3-dev \
     libffi-dev \
     sqlite-dev \
     imap-dev \
-    postgresql-dev \
     lua-resty-core \
     libjpeg-turbo-dev \
     libwebp-dev \
     zlib-dev \
     libxpm-dev \
     libpng \
+    gmp-dev \
     libpng-dev && \
   # Install PHP modules
     docker-php-ext-configure gd \
@@ -71,26 +65,12 @@ RUN apk add --no-cache --virtual .sys-deps \
       --with-jpeg \
       --with-webp && \
     docker-php-ext-install gd && \
-     pip install --upgrade pip && \
-    docker-php-ext-install pdo_mysql mysqli pdo_sqlite pgsql pdo_pgsql exif intl xsl soap zip && \
-    pecl install -o -f xdebug && \
-    pecl install -o -f redis && \ 
-    pecl install -o -f mongodb && \
+    docker-php-ext-install pdo_mysql mysqli pdo_sqlite exif intl xsl soap zip gmp && \
+    pecl install -o -f redis && \
     echo "extension=redis.so" > /usr/local/etc/php/conf.d/redis.ini && \
-    echo "extension=mongodb.so" > /usr/local/etc/php/conf.d/mongodb.ini && \
-    echo "zend_extension=xdebug" > /usr/local/etc/php/conf.d/xdebug.ini && \
     docker-php-source delete && \
     mkdir -p /var/www/app && \
-  # Install composer and certbot
-    mkdir -p /var/log/supervisor && \
-    php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" && \
-    php composer-setup.php --quiet --install-dir=/usr/bin --filename=composer && \
-    rm composer-setup.php &&\
-  #  pip3 install -U pip && \
-    pip3 install -U certbot && \
-    mkdir -p /etc/letsencrypt/webrootauth && \
-    apk del gcc musl-dev linux-headers libffi-dev augeas-dev python3-dev make autoconf && \
-    apk del .sys-deps
+    mkdir -p /var/log/supervisor
 
 ADD conf/supervisord.conf /etc/supervisord.conf
 
